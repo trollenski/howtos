@@ -30,7 +30,7 @@ Pour plus de visibilité, et éviter une décompression "sale", on crée un
 dossier /temporaire/glpi dans lequel on décompressera notre archive.
   
   # mkdir -p /temporaire/glpi
-  # mv /home/lgiardino/Téléchargement/glpi-0.84.5.tar.gz /temporaire/glpi
+  # mv /home/lgiardino/Téléchargements/glpi-0.84.5.tar.gz /temporaire/glpi
   # cd /temporaire/glpi
   # tar xvzf glpi-0.84.5.tar.gz
 
