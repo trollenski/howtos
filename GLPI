@@ -1,0 +1,142 @@
+2014-04-15 (c) Ludovic GIARDINO et Walid DJOUAK
+Installation de l'application GLPI
+
+Pré-requis:
+- un serveur LAMP (Linux Apache MySQL/MariaDB PHP)
+
+PRECONISATION DES DEVELOPPEURS GLPI (fonctionne bien avec le php.ini par défaut
+de SLACWARE 14.1)
+  configuration php.ini  (faire une copie pour plus de sécurité avant de le
+  modifier)
+    
+    # cp /etc/httpd/php.ini /etc/httpd/php.ini.orig
+    # vim /etc/httpd/php.ini
+
+        memory_limit = 64M ; // Valeur minimal
+        file_uploads = on ;
+        max_execution_time = 600 ; // Préconisé mais non obligatoire
+        register_globals = off ;   // Préconisé mais non obligatoire
+        magic_quotes_sybase = off ;
+        session.auto_start = off ;
+        session.use_trans_sid = 0 ; // Préconisé mais non obligatoire
+
+
+
+
+Sur le site www.glpi-project.org
+On télécharge la dernière version stable de GLPI.tar.gz
+
+Pour plus de visibilité, et éviter une décompression "sale", on crée un
+dossier /temporaire/glpi dans lequel on décompressera notre archive.
+  
+  # mkdir -p /temporaire/glpi
+  # mv /home/lgiardino/Téléchargement/glpi-0.84.5.tar.gz /temporaire/glpi
+  # cd /temporaire/glpi
+  # tar xvzf glpi-0.84.5.tar.gz
+
+Une fois l'application décompressé on va créer un dossier pour l'accueillir sur
+notre serveur web.
+
+  # mkdir -p /var/www/vhosts/glpi/htdocs
+  # mv -r /temporaire/glpi/glpi/* /var/www/vhosts/glpi/htdocs
+
+On doit mettre les bonnes permissions à notre dossier glpi pour que le serveur
+apache puisse l'utiliser.
+
+  # chown -R apache:apache /var/www/vhosts/glpi/
+
+
+Maintenant on va ajouter la stance dans notre fichier
+/etc/httpd/extra/httpd-vhosts.conf pour notre application glpi.
+
+  # vim /etc/httpd/extra/httpd-vhosts.conf
+
+        <VirtualHost *:80>
+            ServerAdmin info@info.fr
+            DocumentRoot "/srv/httpd/vhosts/glpi/htdocs"
+            ServerName glpi.poste-ludovic.bge.montpellier
+            ServerAlias glpi.poste-ludovic
+            ErrorLog "/var/log/httpd/glpi-error_log"
+            CustomLog "/var/log/httpd/glpi-access_log" common
+        </VirtualHost>
+ 
+
+On va créer une base de données GLPI avec son utilisateur dans MySQL.
+  
+  # mysql -u root -p
+  # --Mot-De-Passe-root
+
+  MariaDB[(none)] > create database glpi;
+  MariaDB[(none)] > grant all on glpi.* to glpiuser@localhost 
+                 ->identified by 'mot-de-passe'; (accorde tous les droits
+                 de la base de données glpi à l'utilisateur)
+  MariaDB[(none)] > quit; (cltr + C)
+  Bye
+
+Il nous reste à ajouter dans notre fichier hosts (pour l'avoir en local) ou :
+sur le serveur DNS (dnsmasq) le fichier /etc/hosts
+sur le serveur DNS (bind) le fichier /var/named/zone.mon-domaine
+
+  # vim /etc/hosts (sur machine local et/ou serveur dnsmasq)
+     
+     192.168.2.9 glpi.poste-ludovic.bge.montpellier glpi.poste-ludovic
+
+  # vim /var/named/zone.mon-domaine (sur serveur bind)
+    
+    glpi.poste-ludovic IN A 192.168.2.9
+
+Il faut redémarrer les services: rc.httpd, (rc.dnsmasq ou rc.bind, si l'on
+utilise un serveur DNS)
+  
+  # /etc/rc.d/rc.httpd restart
+  # /etc/rc.d/rc.dnsmasq restart (pour dnsmasq)
+  # /etc/rc.d/rc.bind restart (pour bind)
+
+
+Enfin on peut configurer l'application glpi sur notre navigateur via
+son interface (glpi setup).
+
+  http://glpi.poste-ludovic
+    
+    ETAPE 1: Configuration de la connexion à la base de données
+        
+              Paramètre de la connexion
+                -Serveur Mysql : localhost
+                -Utlisateur Mysql : glpiuser
+                -Mot de passe : mot-de-passe      
+
+    ETAPE 2: Sélectionner la base de données parmi les choix proposés
+              
+                ->On sélectionne glpi.
+
+    ETAPE 3: Initialisation de la base de données
+                
+          message affiché -> Ok la base de données a été bien initialisée
+
+    ETAPE 4: Fin de l'installation
+          
+            Sur l'application glpi, les identifiants et mots de passes sont
+            établis par défaut et sont présenté comme suit:
+
+              - glpi/glpi pour le compte administrateur
+              - tech/tech pour le compte technicien
+              - normal/normal pour le compte normal
+              - postonly/postonly pour le compte postonly
+
+       Toute fois on peut toujours supprimer ou modifié ces comptes ainsi que
+       les données initiales.
+
+    ETAPE FINALE: Se connecter à l'application glpi
+              
+           via l'identifiant et le mot de passe de notre choix (voir ETAPE 4)
+
+Une fois connecté on a une interface graphique fonctionnelle de l'application
+glpi.
+
+
+
+
+
+
+
+
