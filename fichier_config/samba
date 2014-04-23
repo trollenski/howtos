@@ -37,7 +37,7 @@ hosts allow = 192.168.2. 127.
 # hosts deny = @ip
 
 # Définit le modèle de sécurité. Elle est optionelle, étant donné qu'il s'agit du réglage par défaut de Samba.
-security = users
+security = user
 
 # Définit la gestion des mots de passe. "TDB" signifie "Trivial Database" et désigne un format de stockage binaire. Les mots de passes sont stockés dans le fichiher "/etc/samba/private/passdb.tdb"
 passdb backend = tdbsam
