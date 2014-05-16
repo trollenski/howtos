@@ -1,0 +1,186 @@
+
+
+          #******** CONFIGURATION DNSMASQ SLACKWARE 14.1 *********#
+
+
+# vim /etc/dnsmasq.conf ===> commande exécuté en tant que root
+$ vim /etc/dnsmasq.conf ===> commande exécuté en tant que simple utilisateur
+
+
+############################# Pré-requis ####################################
+#
+#  Dans /etc/rc.d/rc.firewall il faut ouvrit les ports
+#      - 53 en TCP et UDP
+#       => iptables -A INPUT -p tcp -i <interface_lan> --dport 53 -j ACCEPT
+#       => iptables -A INPUT -p udp -i <interface_lan> --dport 53 -j ACCEPT
+#      - 67 et 68 en TCP
+#       => iptables -A INPUT -p tcp -i <interface_lan> --dport 67:68 -j ACCEPT
+#
+#
+#  Les services BIND et DHCP doivent être désactivés, pour ne pas créer de
+#  conflits avec DNSMASQ.
+#      - # chmod -x /etc/rc.d/rc.dhcpd
+#      - # chmod -x /etc/rc.d/rc.bind
+#
+############################################################################
+
+
+
+######################## Fichiers qu'on éditera ############################
+#
+#	- /etc/HOSTNAME
+#	- /etc/hosts
+#	- /etc/resolv.conf
+#	- /etc/dnsmasq.conf
+#
+############################################################################
+
+
+########################## SUR LE SERVEUR ##################################
+
+***** /etc/HOSTNAME *****
+
+==> On s'assure du nom complet(FQDN) de notre Serveur, en éditant le fichier HOSTNAME
+
+	nom_hote.nom_domaine exemple: toto.mon.domaine
+
+# vim /etc/HOSTNAME
+	
+	toto.mon.domaine
+
+
+***** /etc/hosts *****
+
+==> C'est le fichier qui permettra à notre serveur de faire la résolution de nomentre les adresses IP et les noms d'hôte des machines.
+
+# vim /etc/hosts
+	
+	127.0.0.1 localhost.localdomain localhost
+	192.168.1.1 toto.mon.domaine toto
+	192.168.2.1 toto.mon.domaine toto #si notre serveur a une deuxième carte réseau
+
+*** Si l'on doit ajouter des hôtes statiques où virtuel (dans le cas d'hébergement de sites web, sur un même serveur) on les rajoute au fichier hosts de la même facon. ***
+	
+	# hôtes virtuels
+	192.168.1.2 tata.mon.domain tata
+	192.168.1.2 site1.tata.mon.domain site1.tata
+	192.168.1.2 site2.tata.mon.domain site2.tata
+	
+	# hôtes statiques
+	192.168.1.10 client1.mon.domaine client1
+	192.168.1.11 client2.mon.domaine client2
+
+
+***** /etc/dnsmasq.conf *****
+
+==> C'est le fichier de configuration de DNSMASQ, il est préférable dans faire une copie avant de l'éditer.
+
+# mv /etc/dnsmasq.conf /etc/dnsmasq.orig
+
+==> Maintenant on va recréer le fichier de configuration de DNSMASQ
+
+# vim /etc/dnsmasq.conf
+	
+	
+	# Evite que dnsmasq relais les noms d'hôtes locaux sur des DNS en amont
+	domain-needed
+	bogus-priv
+	
+	# Interface sur laquelle dnsmasq sera utilisé
+	interface=eth0
+	
+	# Plage d'adressage IP pour le DHCP
+	dhcp-range=192.168.1.100,192.168.1.150,24h
+	
+	# Nom de domain local du réseau
+	local=/mon.domaine/
+	domain=mon.domaine
+	
+	# Adresse des serveurs DNS en amont (serveurs publique de Google)
+	expand-hosts
+	server=8.8.8.8
+	server=8.8.4.4
+	
+	# Attribuer une adresse fixe à un client DHCP via son adresse MAC
+	# (éviter de mettre une @IP de la plage d'adressage attribué par le DHCP)
+	# dhcp-host=@MAC,NOM_HOTE_POSTE_CLIENT,@IP_FIXE
+	dhcp-host=00:00:00:00:00:00,client1,192.168.1.151
+
+	# dhcp-host=@MAC,@MAC_WIFI,NOM_HOTE_POSTE_CLIENT,@IP_FIXE (Si l'on veut attribuer une IPfixe à  une machine avec une interface ethernet et wifi) 
+	dhcp-host=08:a9:00:21:00:ff,55:1a:32:af:88:6d,client2,192.168.1.152
+
+
+***** /etc/resolv.conf *****
+
+==> C'est le fichier qui indique quel est notre serveur DNS, ici nous même, ainsi que le domain de recherche d'hôtes.
+
+# vim /etc/resolv.conf
+	
+	domain mon.domaine
+	search mon.domaine
+	nameserver 127.0.0.1 #localhost
+
+***** /etc/rc.d/rc.dnsmasq *****
+
+==> On va maintenant démarrer le service DNSMASQ, il faut d'abord le rendre exécutable.
+
+# chmod +x /etc/rc.d/rc.dnsmasq
+# /etc/rc.d/rc.dnsmasq start
+
+
+************************************************************************************************************************************************************************************************************************************************
+
+
+########################## SUR LES CLIENTS ##################################
+
+==============> Sur les Clients en IP fixe via DCHP
+
+***** /etc/rc.d/rc.inet1.conf
+
+# vim /etc/rc.d/rc.inet1.conf
+
+	# Config information for eth0:
+	IPADDR[0]=""
+	NETMASK[0]=""
+	USE_DHCP[0]="yes"
+	DHCP_HOSTNAME[0]=""
+
+
+***** /etc/HOSTNAME ****
+
+# vim /etc/HOSTNAME
+
+	localhost.localdomain
+
+
+***** /etc/hosts *****
+
+# vim /etc/hosts
+		
+	127.0.0.1 localhost.localdomain localhost
+
+
+
+==============> Sur les Clients en IP fixe
+
+***** /etc/HOSTNAME ****
+
+# vim /etc/HOSTNAME
+
+	client1.mon.domaine
+
+
+***** /etc/hosts *****
+
+# vim /etc/hosts
+		
+	127.0.0.1 localhost.localdomain localhost
+
+
+***** /etc/resolv.conf *****
+
+#vim /etc/resolv.conf
+
+	domain mon.domain
+	search mon.domain
+	nameserver 192.168.1.1
